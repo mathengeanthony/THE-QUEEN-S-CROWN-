@@ -7,3 +7,14 @@ body {
   overflow: hidden;
   touch-action: none; /* Prevent pull-to-refresh on mobile */
 }
+
+@keyframes float {
+  0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+  20% { opacity: 0.8; }
+  80% { opacity: 0.8; }
+  100% { transform: translateY(-20vh) scale(1.2); opacity: 0; }
+}
+
+.animate-float {
+  animation: float linear infinite;
+}
