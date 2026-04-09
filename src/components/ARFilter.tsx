@@ -171,21 +171,21 @@ export default function ARFilter() {
     // Fix color space and tone mapping for vibrant GLB colors
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.8; // Boost exposure for that bright, magical look
+    renderer.toneMappingExposure = 1.0; // Reduced exposure to show true colors
 
-    // Add super bright, magical lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 3.0); // Much brighter ambient
+    // Add balanced, magical lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Balanced ambient
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffaaff, 2.0); // White sky, pinkish ground reflection
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffaaff, 1.0); // Soft magical sky/ground
     hemiLight.position.set(0, 200, 0);
     scene.add(hemiLight);
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 3.0);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); // Main directional
     mainLight.position.set(0, 1, 1);
     scene.add(mainLight);
     
-    const fillLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0); // Soft fill
     fillLight.position.set(1, 0, -1);
     scene.add(fillLight);
 
@@ -197,7 +197,7 @@ export default function ARFilter() {
       const w = window.innerWidth;
       const h = window.innerHeight;
       camera.right = w;
-      camera.bottom = h;
+      camera.top = h; // Fix: Update top instead of bottom to prevent distortion
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
@@ -231,7 +231,7 @@ export default function ARFilter() {
               if (child.isMesh && child.material) {
                 // Add a tiny bit of emissive glow based on its own color to prevent dark shadows
                 if (child.material.emissive && child.material.color) {
-                  child.material.emissive.copy(child.material.color).multiplyScalar(0.2);
+                  child.material.emissive.copy(child.material.color).multiplyScalar(0.1);
                 }
                 child.material.needsUpdate = true;
               }
