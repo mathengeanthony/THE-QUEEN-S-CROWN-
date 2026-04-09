@@ -1,0 +1,5 @@
+{
+  "name": "Queen's Crown AR",
+  "description": "An AR filter site like Snapchat that puts a Queen's Crown on your head.",
+  "requestFramePermissions": ["camera"]
+}
