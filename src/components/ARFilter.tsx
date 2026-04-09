@@ -167,13 +167,27 @@ export default function ARFilter() {
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Fix color space and tone mapping for vibrant GLB colors
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.8; // Boost exposure for that bright, magical look
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    // Add super bright, magical lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 3.0); // Much brighter ambient
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-    directionalLight.position.set(0, 1, 1);
-    scene.add(directionalLight);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffaaff, 2.0); // White sky, pinkish ground reflection
+    hemiLight.position.set(0, 200, 0);
+    scene.add(hemiLight);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 3.0);
+    mainLight.position.set(0, 1, 1);
+    scene.add(mainLight);
+    
+    const fillLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    fillLight.position.set(1, 0, -1);
+    scene.add(fillLight);
 
     sceneRef.current = scene;
     cameraRef.current = camera;
@@ -211,6 +225,17 @@ export default function ARFilter() {
               sceneRef.current?.remove(crownModelRef.current);
             }
             const model = gltf.scene;
+            
+            // Make materials pop and look vibrant
+            model.traverse((child: any) => {
+              if (child.isMesh && child.material) {
+                // Add a tiny bit of emissive glow based on its own color to prevent dark shadows
+                if (child.material.emissive && child.material.color) {
+                  child.material.emissive.copy(child.material.color).multiplyScalar(0.2);
+                }
+                child.material.needsUpdate = true;
+              }
+            });
             
             // Center the model's geometry
             const box = new THREE.Box3().setFromObject(model);
