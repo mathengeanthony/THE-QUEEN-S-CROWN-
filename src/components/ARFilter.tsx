@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Camera, FlipHorizontal, Download, X, Loader2, Upload } from 'lucide-react';
+import { Camera, FlipHorizontal, Download, X, Loader2 } from 'lucide-react';
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -69,7 +69,7 @@ export default function ARFilter() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [glbUrl, setGlbUrl] = useState<string | null>(null);
+  const [glbUrl, setGlbUrl] = useState<string | null>('/crown.glb');
 
   // Initialize MediaPipe
   useEffect(() => {
@@ -199,35 +199,47 @@ export default function ARFilter() {
   useEffect(() => {
     if (!glbUrl || !sceneRef.current) return;
 
-    const loader = new GLTFLoader();
-    loader.load(glbUrl, (gltf) => {
-      if (crownModelRef.current) {
-        sceneRef.current?.remove(crownModelRef.current);
-      }
-      const model = gltf.scene;
-      
-      // Center the model's geometry
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      
-      // Offset all children so the bounding box center is at (0,0,0)
-      model.children.forEach(child => {
-        child.position.sub(center);
-      });
-      
-      // Calculate new size after centering
-      const newBox = new THREE.Box3().setFromObject(model);
-      const size = newBox.getSize(new THREE.Vector3());
-      model.userData.baseScale = size.x || 1;
-      
-      // Move the model up slightly so the bottom sits on the forehead, not the center
-      model.userData.yOffset = size.y / 2;
+    // Check if the file exists and isn't the HTML fallback (SPA routing)
+    fetch(glbUrl, { method: 'HEAD' })
+      .then(response => {
+        const contentType = response.headers.get('content-type');
+        if (response.ok && contentType && !contentType.includes('text/html')) {
+          const loader = new GLTFLoader();
+          loader.load(glbUrl, (gltf) => {
+            if (crownModelRef.current) {
+              sceneRef.current?.remove(crownModelRef.current);
+            }
+            const model = gltf.scene;
+            
+            // Center the model's geometry
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            
+            // Offset all children so the bounding box center is at (0,0,0)
+            model.children.forEach(child => {
+              child.position.sub(center);
+            });
+            
+            // Calculate new size after centering
+            const newBox = new THREE.Box3().setFromObject(model);
+            const size = newBox.getSize(new THREE.Vector3());
+            model.userData.baseScale = size.x || 1;
+            
+            // Move the model up slightly so the bottom sits on the forehead, not the center
+            model.userData.yOffset = size.y / 2;
 
-      sceneRef.current?.add(model);
-      crownModelRef.current = model;
-    }, undefined, (error) => {
-      console.error("Error loading GLB:", error);
-    });
+            sceneRef.current?.add(model);
+            crownModelRef.current = model;
+          }, undefined, (error) => {
+            console.warn("Could not load custom 3D crown, falling back to 2D crown.", error);
+          });
+        } else {
+          console.log("No custom crown.glb found. Using default 2D crown.");
+        }
+      })
+      .catch(() => {
+        console.log("Could not check for crown.glb. Using default 2D crown.");
+      });
   }, [glbUrl]);
 
   // Render Loop
@@ -393,14 +405,6 @@ export default function ARFilter() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setGlbUrl(url);
-    }
-  };
-
   if (hasPermission === false) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-zinc-900 text-white p-6 text-center">
@@ -454,15 +458,6 @@ export default function ARFilter() {
         <>
           <FloatingEmojis />
           <div className="absolute inset-0 pointer-events-none border-[8px] border-purple-500/40 shadow-[inset_0_0_60px_30px_rgba(168,85,247,0.6)] z-20 mix-blend-screen" />
-          
-          {/* GLB Upload Button */}
-          <div className="absolute top-6 left-6 z-30 pointer-events-auto">
-            <label className="flex items-center gap-2 px-4 py-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white border border-pink-500/50 cursor-pointer transition-all active:scale-95 shadow-[0_0_10px_rgba(236,72,153,0.3)]">
-              <Upload className="w-4 h-4" />
-              <span className="text-sm font-medium">{glbUrl ? 'Change 3D Crown' : 'Upload .glb Crown'}</span>
-              <input type="file" accept=".glb" className="hidden" onChange={handleFileUpload} />
-            </label>
-          </div>
 
           <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 pointer-events-none">
             {/* Top Bar */}
