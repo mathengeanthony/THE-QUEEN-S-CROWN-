@@ -203,7 +203,8 @@ export default function ARFilter() {
     fetch(glbUrl, { method: 'HEAD' })
       .then(response => {
         const contentType = response.headers.get('content-type');
-        if (response.ok && contentType && !contentType.includes('text/html')) {
+        // Allow if response is OK and it's NOT explicitly an HTML file (which means it's the SPA fallback)
+        if (response.ok && (!contentType || !contentType.includes('text/html'))) {
           const loader = new GLTFLoader();
           loader.load(glbUrl, (gltf) => {
             if (crownModelRef.current) {
